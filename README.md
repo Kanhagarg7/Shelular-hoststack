@@ -7,18 +7,28 @@ sdk: docker
 pinned: false
 ---
 
+<div align="center">
+
 # Shellular Web UI
 
-A self-hosted web interface that runs **[Shellular](https://shellular.dev)** inside a Hugging Face Space and shows the pairing QR code in your browser — no terminal access needed.
+A self-hosted web interface for [Shellular](https://shellular.dev) — login with a secret key, get a QR code, scan it with the Shellular app and connect your phone to your environment.
+
+![Node.js](https://img.shields.io/badge/Node.js-20-green?logo=node.js)
+![Docker](https://img.shields.io/badge/Docker-ready-blue?logo=docker)
+![License](https://img.shields.io/badge/license-MIT-brightgreen)
+
+</div>
 
 ---
 
-## What it does
+## Features
 
-- Password-protected login page hosted on your HF Space URL
-- Starts Shellular automatically after login and renders a scannable QR code
-- All traffic between your phone and the host is **end-to-end encrypted** (libsodium)
-- One-time setup panel guides you through saving permanent secrets so restarts are instant
+- Password-protected login page
+- Renders a scannable QR code for the Shellular app
+- End-to-end encrypted connection (libsodium)
+- One-time setup panel to save permanent credentials
+- Manual registration fallback when rate-limited
+- Dark theme UI
 
 ---
 
@@ -27,106 +37,113 @@ A self-hosted web interface that runs **[Shellular](https://shellular.dev)** ins
 ```
 Your Phone  ──scan QR──▶  Shellular App
                                │
-                    wss://api.shellular.dev  (relay, E2E encrypted)
+                    wss://api.shellular.dev
                                │
-                          HF Space
-                    (Node.js + Shellular CLI)
+                         Web UI Server
+                      (Node.js + Shellular CLI)
 ```
 
 ---
 
 ## Quick Start
 
-### Step 1 — Fork the Space
+### Requirements
 
-Click **Duplicate this Space** on the top-right of this Space page.
+- Node.js 20+
+- Docker (optional)
+- [Shellular app](https://shellular.dev) on your phone
 
-### Step 2 — Add `SECRET_KEY`
+### Run with Docker
 
-Go to your forked Space → **Settings → Variables and secrets → New secret**
+```bash
+docker build -t shellular-web .
+docker run -p 7860:7860 -e SECRET_KEY=yourpassword shellular-web
+```
 
-| Name | Value |
-|------|-------|
-| `SECRET_KEY` | Any strong password — this is the login password for the web UI |
+Open `http://localhost:7860`, enter your `SECRET_KEY`, and scan the QR code.
 
-The Space will restart automatically.
+### Run directly
 
-### Step 3 — Login
-
-Open your Space URL (`https://your-username-vps.hf.space`), enter your `SECRET_KEY` and click **Login**.
-
-Shellular starts automatically. Within a few seconds the QR code appears.
-
-### Step 4 — Scan the QR code
-
-Install the **Shellular app** on your phone → [shellular.dev](https://shellular.dev)
-
-Open the app and scan the QR code on the dashboard. Your phone is now connected.
-
-### Step 5 — Save the permanent secrets (important!)
-
-After the QR code appears, a **⚡ One-time Setup** panel appears showing three values with **Copy** buttons.
-
-Add all three as secrets in your Space settings:
-
-**Space → Settings → Variables and secrets → New secret**
-
-| Secret name | Where to get it |
-|-------------|-----------------|
-| `SHELLULAR_HOST_ID` | Copy from the One-time Setup panel |
-| `SHELLULAR_MACHINE_ID` | Copy from the One-time Setup panel |
-| `SHELLULAR_KEY` | Copy from the One-time Setup panel |
-
-After adding all three, restart the Space. The setup panel disappears permanently.
-
-> **Why are these needed?**
-> Shellular calls `api.shellular.dev` to register on every cold start.
-> That API is rate-limited — if the Space restarts too often, registration fails
-> and the QR never appears. Saving these three values means Shellular reuses the
-> same registered identity on every restart with no API call at all.
+```bash
+git clone https://github.com/SyntaxAdi/shellular-web
+cd shellular-web
+npm install
+SECRET_KEY=yourpassword node app.js
+```
 
 ---
 
-## All Secrets Reference
+## Environment Variables
 
-| Name | Required | Description |
-|------|----------|-------------|
-| `SECRET_KEY` | ✅ Always | Login password for the web UI. Choose anything strong. |
-| `SHELLULAR_HOST_ID` | ⭐ Strongly recommended | The relay server's ID for this host. Shown in the One-time Setup panel. |
-| `SHELLULAR_MACHINE_ID` | ⭐ Strongly recommended | Hashed machine identifier tied to the registration. Shown in the One-time Setup panel. |
-| `SHELLULAR_KEY` | ⭐ Strongly recommended | 32-byte base64 E2E encryption key. Shown in the One-time Setup panel. |
+| Variable | Required | Description |
+|----------|----------|-------------|
+| `SECRET_KEY` | ✅ Always | Password for the login page |
+| `SHELLULAR_HOST_ID` | ⭐ Recommended | Pre-registered host ID — skips registration API on every restart |
+| `SHELLULAR_MACHINE_ID` | ⭐ Recommended | Hashed machine ID tied to the registration |
+| `SHELLULAR_KEY` | ⭐ Recommended | Base64-encoded 32-byte E2E encryption key |
+| `PORT` | Optional | Port to listen on (default: `7860`) |
+
+### Why are `SHELLULAR_*` variables needed?
+
+Shellular calls `api.shellular.dev` to register on every cold start. That API is rate-limited — if the server restarts too often, registration fails and no QR appears. Setting these three variables lets the server reuse the same registered identity on every restart with no API call.
+
+**How to get them:** After your first successful login and QR render, a **⚡ One-time Setup** panel appears on the dashboard with all three values and copy buttons.
 
 ---
 
-## Troubleshooting
+## Manual Registration (rate-limit fallback)
 
-### QR code doesn't appear / "Shellular stopped"
+If the automatic registration is blocked, the dashboard shows a **⚠ Rate Limited** card with a `curl` command. Run it from your own terminal:
 
-The Shellular registration API was rate-limited.
+```bash
+curl -s -X POST "https://api.shellular.dev/register" \
+  -H "Content-Type: application/json" \
+  -d '{"machineId":"<shown on card>","platform":"linux"}'
+```
 
-**Fix:** Save the three `SHELLULAR_*` secrets from the One-time Setup panel (Step 5). Once saved, Shellular skips registration on every restart — no rate limit, instant QR.
+Paste the returned `hostId` into the input field and click **Connect**.
 
-If you have not yet seen the One-time Setup panel (e.g. the first registration also failed), wait a few minutes and click **▶ Restart** on the dashboard to try again.
+---
 
-### "Invalid key" on login
+## Deployment
 
-`SECRET_KEY` is not set or was typed incorrectly. Check **Settings → Variables and secrets**.
+Works on any platform that supports persistent Node.js or Docker:
 
-### One-time Setup panel not appearing
-
-The panel only appears after the QR code is successfully rendered for the first time AND the `SHELLULAR_*` secrets are not yet saved. If the QR rendered but the panel did not appear, refresh the page and log in again.
+| Platform | Notes |
+|----------|-------|
+| **Docker** | `docker run -e SECRET_KEY=... -p 7860:7860` |
+| **Your VPS** | `SECRET_KEY=... node app.js` or use `pm2` |
+| **Fly.io** | `flyctl deploy` |
+| **Railway** | Connect repo, set env vars |
+| **Render** | Connect repo, set env vars |
+| **Koyeb** | Connect repo, set env vars |
 
 ---
 
 ## Project Structure
 
 ```
-├── app.js                  # Express server — auth, SSE, shellular lifecycle
+├── app.js              Express server — auth, SSE, shellular lifecycle
 ├── package.json
-├── Dockerfile              # Node 20-slim, pinned machine-id for stable registration
+├── Dockerfile
 └── public/
-    ├── index.html          # Login page + dashboard (QR, One-time Setup, Output log)
-    ├── style.css           # Dark theme
-    ├── app.js              # Frontend JS
-    └── qrcode.min.js       # Bundled QR renderer (no CDN dependency)
+    ├── index.html      Login page + dashboard
+    ├── style.css       Dark theme
+    ├── app.js          Frontend JS
+    └── qrcode.min.js   Bundled QR renderer
 ```
+
+---
+
+## Tech Stack
+
+- **Backend** — Node.js, Express, Server-Sent Events
+- **Frontend** — Vanilla JS, CSS custom properties
+- **QR** — [qrcode.js](https://github.com/davidshimjs/qrcodejs)
+- **Shell** — [Shellular CLI](https://shellular.dev)
+
+---
+
+## License
+
+MIT

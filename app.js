@@ -20,23 +20,16 @@ if (!SECRET_KEY) {
 app.use(express.json());
 app.use(express.static(path.join(__dirname, 'public')));
 
-// ── Session store ─────────────────────────────────────────────────────────────
 const sessions = new Set();
 
-// ── ANSI stripper ─────────────────────────────────────────────────────────────
 function stripAnsi(str) {
-  // eslint-disable-next-line no-control-regex
   return str.replace(/[\u001b\u009b][[()#;?]*(?:[0-9]{1,4}(?:;[0-9]{0,4})*)?[0-9A-ORZcf-nqry=><~]/g, '');
 }
 
-// ── Pre-seed shellular config from env vars ───────────────────────────────────
-// If SHELLULAR_HOST_ID and SHELLULAR_KEY are set (as HF Secrets), we write
-// them into ~/.shellular/ so shellular skips the registration API call entirely.
-// This avoids rate-limit errors during container cold-starts.
 function seedShellularConfig() {
-  const hostId  = process.env.SHELLULAR_HOST_ID;
-  const keyB64  = process.env.SHELLULAR_KEY;       // base64-encoded 32-byte key
-  const machineId = process.env.SHELLULAR_MACHINE_ID; // must match registration
+  const hostId    = process.env.SHELLULAR_HOST_ID;
+  const keyB64    = process.env.SHELLULAR_KEY;
+  const machineId = process.env.SHELLULAR_MACHINE_ID;
 
   if (!hostId || !keyB64 || !machineId) return;
 
@@ -46,14 +39,10 @@ function seedShellularConfig() {
 
   try {
     fs.mkdirSync(shellularDir, { recursive: true });
-
-    // Write config.json (skips registration on next shellular start)
     if (!fs.existsSync(configFile)) {
       fs.writeFileSync(configFile, JSON.stringify({ hostId, machineId }), 'utf-8');
       console.log(`[shellular] seeded config: hostId=${hostId}`);
     }
-
-    // Write the E2E key file (32 bytes from base64)
     if (!fs.existsSync(keyFile)) {
       fs.writeFileSync(keyFile, Buffer.from(keyB64, 'base64'), { mode: 0o600 });
       console.log(`[shellular] seeded key: ${keyFile}`);
@@ -65,9 +54,6 @@ function seedShellularConfig() {
 
 seedShellularConfig();
 
-// ── Shellular machine-id helper ───────────────────────────────────────────────
-// node-machine-id hashes /etc/machine-id with SHA-256.  We replicate that here
-// so the frontend can show the correct curl registration command.
 function getHashedMachineId() {
   try {
     const raw = fs.readFileSync('/etc/machine-id', 'utf-8').trim();
@@ -77,14 +63,11 @@ function getHashedMachineId() {
   }
 }
 
-// Returns the hashed machine-id (safe to expose — not a secret).
 app.get('/api/shellular/machine-id', (_req, res) => {
   const id = getHashedMachineId();
   id ? res.json({ machineId: id }) : res.status(500).json({ error: 'Cannot read machine-id' });
 });
 
-// Accepts a hostId obtained manually by the user, writes ~/.shellular/config.json,
-// and restarts shellular so it skips the registration API entirely.
 app.post('/api/shellular/seed-host', requireAuth, (req, res) => {
   const { hostId } = req.body || {};
   if (!hostId || typeof hostId !== 'string' || !hostId.trim()) {
@@ -101,20 +84,16 @@ app.post('/api/shellular/seed-host', requireAuth, (req, res) => {
       JSON.stringify({ hostId: hostId.trim(), machineId }, null, 2),
       'utf-8'
     );
-
-    // Restart shellular so it picks up the new config
     stopShellular();
     outputBuffer = '';
     broadcast({ type: 'clear' });
     setTimeout(startShellular, 600);
-
     res.json({ ok: true });
   } catch (err) {
     res.status(500).json({ error: err.message });
   }
 });
 
-// ── Auth routes ───────────────────────────────────────────────────────────────
 app.post('/api/login', (req, res) => {
   const { key } = req.body;
   if (!key || key !== SECRET_KEY) {
@@ -131,7 +110,6 @@ app.post('/api/logout', (req, res) => {
   res.json({ ok: true });
 });
 
-// ── Auth middleware ────────────────────────────────────────────────────────────
 function requireAuth(req, res, next) {
   const token = req.headers.authorization?.split(' ')[1];
   if (!token || !sessions.has(token)) {
@@ -140,9 +118,9 @@ function requireAuth(req, res, next) {
   next();
 }
 
-// ── Shellular process management ──────────────────────────────────────────────
 let shellularProc = null;
 let outputBuffer  = '';
+let retryTimer    = null;
 const sseClients  = new Set();
 
 function send(res, payload) {
@@ -156,8 +134,6 @@ function broadcast(payload) {
   }
 }
 
-let retryTimer = null;
-
 function startShellular() {
   if (shellularProc || retryTimer) return;
 
@@ -168,7 +144,6 @@ function startShellular() {
     stdio: ['ignore', 'pipe', 'pipe'],
   });
 
-  // Accumulate stdout/stderr so we can detect the error type on exit
   let procOutput = '';
 
   const handleData = (chunk) => {
@@ -192,15 +167,13 @@ function startShellular() {
   shellularProc.on('exit', (code, signal) => {
     shellularProc = null;
 
-    // Detect rate-limit / registration failure (exit code 1, no signal)
     const isRegError = code === 1 && !signal &&
       (procOutput.includes('invalid_union') || procOutput.includes('Too many requests') ||
        procOutput.includes('host registration'));
 
     if (isRegError) {
       const WAIT = 30;
-      const msg = `\n⚠ Registration rate-limited by shellular API.\n` +
-                  `  Retrying automatically in ${WAIT}s — please wait…\n`;
+      const msg = `\n⚠ Registration rate-limited by shellular API.\n  Retrying automatically in ${WAIT}s — please wait…\n`;
       outputBuffer += msg;
       broadcast({ type: 'output', text: msg });
       broadcast({ type: 'status', status: 'retrying' });
@@ -232,25 +205,20 @@ function stopShellular() {
   shellularProc = null;
 }
 
-// ── SSE stream ─────────────────────────────────────────────────────────────────
 app.get('/api/stream', requireAuth, (req, res) => {
   res.setHeader('Content-Type', 'text/event-stream');
   res.setHeader('Cache-Control', 'no-cache');
   res.setHeader('Connection', 'keep-alive');
-  res.setHeader('X-Accel-Buffering', 'no'); // disable nginx buffering on HF
+  res.setHeader('X-Accel-Buffering', 'no');
   res.flushHeaders();
 
   send(res, { type: 'status', status: shellularProc ? 'running' : 'stopped' });
-
-  if (outputBuffer) {
-    send(res, { type: 'output', text: outputBuffer });
-  }
+  if (outputBuffer) send(res, { type: 'output', text: outputBuffer });
 
   sseClients.add(res);
   req.on('close', () => sseClients.delete(res));
 });
 
-// ── Control endpoints ──────────────────────────────────────────────────────────
 app.post('/api/shellular/start', requireAuth, (_req, res) => {
   startShellular();
   res.json({ ok: true, running: !!shellularProc });
@@ -275,8 +243,6 @@ app.get('/api/status', requireAuth, (_req, res) => {
   res.json({ running: !!shellularProc });
 });
 
-// Tells the frontend whether SHELLULAR_* secrets are already saved.
-// If not, the UI shows a first-time setup panel with values to copy into HF Secrets.
 app.get('/api/setup-status', requireAuth, (_req, res) => {
   const seeded = !!(
     process.env.SHELLULAR_HOST_ID &&
@@ -286,7 +252,6 @@ app.get('/api/setup-status', requireAuth, (_req, res) => {
   res.json({ seeded });
 });
 
-// Returns the registered hostId + base64 key so they can be saved as HF Secrets.
 app.get('/api/shellular/credentials', requireAuth, (_req, res) => {
   try {
     const shellularDir = path.join(os.homedir(), '.shellular');
@@ -300,9 +265,6 @@ app.get('/api/shellular/credentials', requireAuth, (_req, res) => {
   }
 });
 
-// Returns the QR data string ("hostId:keyBase64") for client-side QR rendering.
-// This is safe to expose post-auth — the key is shared with the scanning device
-// anyway (that is the point of the QR code).
 app.get('/api/shellular/qr-data', requireAuth, (_req, res) => {
   try {
     const shellularDir = path.join(os.homedir(), '.shellular');
@@ -310,14 +272,12 @@ app.get('/api/shellular/qr-data', requireAuth, (_req, res) => {
     const { hostId, machineId } = JSON.parse(configRaw);
     const keyFile = path.join(shellularDir, `shellular-${machineId}.e2ee`);
     const keyB64  = fs.readFileSync(keyFile).toString('base64');
-    // Same format shellular itself encodes into the terminal QR
     res.json({ qrData: `${hostId}:${keyB64}` });
   } catch {
     res.status(404).json({ error: 'Config not seeded yet.' });
   }
 });
 
-// ── Start ──────────────────────────────────────────────────────────────────────
 app.listen(PORT, '0.0.0.0', () => {
   console.log(`Shellular Web UI → http://0.0.0.0:${PORT}`);
 });

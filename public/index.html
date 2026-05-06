@@ -8,7 +8,7 @@
 </head>
 <body>
 
-  <!-- ── Login page ─────────────────────────────────────────── -->
+  
   <div id="login-page" class="page">
     <div class="login-card">
       <div class="brand">
@@ -56,7 +56,7 @@
     </div>
   </div>
 
-  <!-- ── Dashboard page ─────────────────────────────────────── -->
+  
   <div id="dashboard-page" class="page hidden">
     <header class="topbar">
       <div class="topbar-brand">
@@ -76,7 +76,7 @@
 
     <main class="dashboard">
 
-      <!-- QR card -->
+      
       <section class="card qr-card">
         <div class="card-header">
           <h2>QR Code</h2>
@@ -84,13 +84,13 @@
         </div>
 
         <div id="qr-area" class="qr-area">
-          <!-- Loading state -->
+          
           <div id="qr-loading" class="qr-state">
             <div class="loader"></div>
             <p>Starting Shellular&hellip;</p>
           </div>
 
-          <!-- QR code rendered on canvas via qrcode.js -->
+          
           <div id="qr-ready" class="qr-state hidden">
             <div class="qr-frame">
               <div id="qr-canvas"></div>
@@ -98,7 +98,7 @@
             <p class="qr-hint">Point your Shellular app camera at the code above</p>
           </div>
 
-          <!-- Error / stopped state -->
+          
           <div id="qr-error" class="qr-state hidden">
             <p class="error-icon">&#9888;</p>
             <p id="qr-error-msg">Shellular stopped unexpectedly.</p>
@@ -107,7 +107,7 @@
         </div>
       </section>
 
-      <!-- First-time setup card (hidden once secrets are saved) -->
+      
       <section id="setup-card" class="card setup-card hidden">
         <div class="card-header">
           <h2>&#9889; One-time Setup</h2>
@@ -145,7 +145,7 @@
         </div>
       </section>
 
-      <!-- Manual registration fallback (shown when rate-limited) -->
+      
       <section id="manual-reg-card" class="card manual-card hidden">
         <div class="card-header">
           <h2>&#9888; Rate Limited — Manual Registration</h2>
@@ -183,7 +183,7 @@
         </div>
       </section>
 
-      <!-- Log card -->
+      
       <section class="card log-card">
         <div class="card-header">
           <h2>Output</h2>

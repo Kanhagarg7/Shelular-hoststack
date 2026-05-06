@@ -1,11 +1,9 @@
-/* ── State ───────────────────────────────────────────────────────────────── */
 let token = sessionStorage.getItem('shellular_token') || null;
 let evtSource = null;
 let fullOutput   = '';
 let shellStatus  = 'stopped';
 let qrRendered   = false;
 
-/* ── DOM helpers ─────────────────────────────────────────────────────────── */
 const $ = (id) => document.getElementById(id);
 
 const loginPage     = $('login-page');
@@ -30,7 +28,6 @@ const qrErrorMsg    = $('qr-error-msg');
 const qrCanvas      = $('qr-canvas');
 const logPre        = $('log-pre');
 
-/* ── Routing ─────────────────────────────────────────────────────────────── */
 function showLogin() {
   loginPage.classList.remove('hidden');
   dashPage.classList.add('hidden');
@@ -41,10 +38,9 @@ function showDashboard() {
   loginPage.classList.add('hidden');
   dashPage.classList.remove('hidden');
   connectStream();
-  ensureShellularRunning(); // always start shellular, whether fresh login or returning session
+  ensureShellularRunning(); 
 }
 
-/* ── Password visibility toggle ──────────────────────────────────────────── */
 toggleVisBtn.addEventListener('click', () => {
   const isPassword = keyInput.type === 'password';
   keyInput.type = isPassword ? 'text' : 'password';
@@ -52,7 +48,6 @@ toggleVisBtn.addEventListener('click', () => {
   eyeClosed.classList.toggle('hidden', !isPassword);
 });
 
-/* ── Login ───────────────────────────────────────────────────────────────── */
 loginForm.addEventListener('submit', async (e) => {
   e.preventDefault();
   const key = keyInput.value.trim();
@@ -90,7 +85,6 @@ loginForm.addEventListener('submit', async (e) => {
   }
 });
 
-/* ── Logout ──────────────────────────────────────────────────────────────── */
 logoutBtn.addEventListener('click', async () => {
   if (evtSource) { evtSource.close(); evtSource = null; }
   await fetch('/api/logout', {
@@ -105,15 +99,14 @@ logoutBtn.addEventListener('click', async () => {
   showLogin();
 });
 
-/* ── SSE stream ──────────────────────────────────────────────────────────── */
 function connectStream() {
   if (evtSource) { evtSource.close(); }
 
   evtSource = new EventSource(`/api/stream?t=${Date.now()}`, {});
 
-  // EventSource doesn't support custom headers, so we pass the token
-  // as a cookie or query param workaround via a short-lived fetch first.
-  // Instead, we do: close the native EventSource approach and use fetch-based SSE.
+  
+  
+  
   evtSource.close();
   evtSource = null;
   startFetchSSE();
@@ -148,7 +141,7 @@ async function startFetchSSE() {
 
       partial += decoder.decode(value, { stream: true });
       const parts = partial.split('\n\n');
-      partial = parts.pop(); // keep incomplete last chunk
+      partial = parts.pop(); 
 
       for (const part of parts) {
         const line = part.trim();
@@ -156,17 +149,16 @@ async function startFetchSSE() {
         try {
           const payload = JSON.parse(line.slice(5).trim());
           handleEvent(payload);
-        } catch { /* ignore parse errors */ }
+        } catch {  }
       }
     }
   } catch {
-    // Connection dropped — retry after 2s
+    
   }
 
   setTimeout(startFetchSSE, 2000);
 }
 
-/* ── Event handler ───────────────────────────────────────────────────────── */
 function handleEvent(payload) {
   if (payload.type === 'status') {
     updateStatus(payload.status);
@@ -180,7 +172,6 @@ function handleEvent(payload) {
   }
 }
 
-/* ── Status display ──────────────────────────────────────────────────────── */
 function updateStatus(status) {
   shellStatus = status;
 
@@ -196,7 +187,7 @@ function updateStatus(status) {
 
   if (status === 'retrying') {
     if (!qrRendered) setQrState('loading');
-    return; // keep showing the spinner while we wait
+    return; 
   }
 
   if (status === 'stopped' || status === 'error') {
@@ -213,20 +204,18 @@ function updateStatus(status) {
     if (!qrRendered) setQrState('loading');
   }
 
-  // Once shellular is running, fetch the QR data and render it
+  
   if (status === 'running' && !qrRendered) {
     fetchAndRenderQR();
   }
 }
 
-/* ── QR state machine ────────────────────────────────────────────────────── */
 function setQrState(state) {
   qrLoading.classList.toggle('hidden', state !== 'loading');
   qrReady.classList.toggle('hidden', state !== 'ready');
   qrError.classList.toggle('hidden', state !== 'error');
 }
 
-/* ── QR rendering ────────────────────────────────────────────────────────── */
 async function fetchAndRenderQR() {
   for (let i = 0; i < 8; i++) {
     await new Promise(r => setTimeout(r, i === 0 ? 1000 : 2500));
@@ -237,10 +226,10 @@ async function fetchAndRenderQR() {
       const qrData = json.qrData;
       if (!qrData) continue;
 
-      // Show the container FIRST so the div has real dimensions when QRCode renders
+      
       setQrState('ready');
 
-      // Wipe any previous render
+      
       qrCanvas.innerHTML = '';
 
       new QRCode(qrCanvas, {
@@ -263,21 +252,19 @@ async function fetchAndRenderQR() {
   }
 }
 
-/* ── Output processing ───────────────────────────────────────────────────── */
 function appendOutput(text) {
   if (!text) return;
   fullOutput += text;
   logPre.textContent = fullOutput;
   logPre.scrollTop = logPre.scrollHeight;
 
-  // Show manual registration card as soon as rate-limit message appears
+  
   if (text.includes('rate-limited') || text.includes('Registration rate-limited')) {
     rateLimitCount++;
     if (rateLimitCount >= 1) loadManualCard();
   }
 }
 
-/* ── Controls ────────────────────────────────────────────────────────────── */
 restartBtn.addEventListener('click', restartShellular);
 
 async function restartShellular() {
@@ -305,7 +292,6 @@ async function authFetch(url, method = 'GET') {
   return res;
 }
 
-/* ── Manual registration fallback ───────────────────────────────────────── */
 const manualCard      = $('manual-reg-card');
 const manualCurlCmd   = $('manual-curl-cmd');
 const manualHostInput = $('manual-host-id');
@@ -324,7 +310,7 @@ async function loadManualCard() {
     manualCurlCmd.textContent = cmd;
     machineIdLoaded = true;
     manualCard.classList.remove('hidden');
-  } catch { /* silent */ }
+  } catch {  }
 }
 
 manualSubmitBtn.addEventListener('click', async () => {
@@ -349,7 +335,7 @@ manualSubmitBtn.addEventListener('click', async () => {
 
     manualCard.classList.add('hidden');
     rateLimitCount = 0;
-    // shellular is restarting — clear output and show loading
+    
     fullOutput = '';
     logPre.textContent = '';
     qrRendered = false;
@@ -363,9 +349,8 @@ manualSubmitBtn.addEventListener('click', async () => {
   }
 });
 
-/* ── First-time setup panel ──────────────────────────────────────────────── */
 const setupCard  = $('setup-card');
-let setupDone    = false;  // true once panel is shown OR secrets are already seeded
+let setupDone    = false;  
 
 async function checkSetup() {
   if (setupDone || !token) return;
@@ -373,28 +358,25 @@ async function checkSetup() {
     const r1 = await authFetch('/api/setup-status');
     if (!r1 || !r1.ok) return;
     const { seeded } = await r1.json();
-    if (seeded) { setupDone = true; return; } // secrets already saved
+    if (seeded) { setupDone = true; return; } 
 
-    // Try to read credentials (shellular must have registered first)
+    
     const r2 = await authFetch('/api/shellular/credentials');
-    if (!r2 || !r2.ok) return; // not ready yet — poll will retry
+    if (!r2 || !r2.ok) return; 
     const data = await r2.json();
     if (!data.hostId) return;
 
-    // Populate and show the panel
+    
     $('val-host-id').textContent    = data.hostId;
     $('val-machine-id').textContent = data.machineId;
     $('val-key').textContent        = data.keyB64;
     setupCard.classList.remove('hidden');
     setupDone = true;
-  } catch { /* retry on next poll */ }
+  } catch {  }
 }
 
-// Poll every 4 s so the panel appears as soon as credentials are available,
-// regardless of whether the QR has rendered yet.
 setInterval(checkSetup, 4000);
 
-// Copy-to-clipboard buttons
 document.addEventListener('click', (e) => {
   const btn = e.target.closest('.btn-copy');
   if (!btn) return;
@@ -406,7 +388,6 @@ document.addEventListener('click', (e) => {
   });
 });
 
-/* ── Kick off shellular automatically after login ────────────────────────── */
 async function ensureShellularRunning() {
   const res = await authFetch('/api/status');
   if (!res) return;
@@ -416,8 +397,6 @@ async function ensureShellularRunning() {
   }
 }
 
-/* ── Init ────────────────────────────────────────────────────────────────── */
-// If we have a stored token, try to go straight to the dashboard
 if (token) {
   fetch('/api/status', { headers: { Authorization: `Bearer ${token}` } })
     .then((r) => {
@@ -434,5 +413,4 @@ if (token) {
   showLogin();
 }
 
-// Expose for inline onclick in HTML
 window.restartShellular = restartShellular;
