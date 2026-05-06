@@ -10,6 +10,7 @@ RUN apt-get update && \
         curl \
         git \
         sudo \
+        gosu \
         neofetch \
         mediainfo \
         python3-venv \
@@ -28,22 +29,24 @@ RUN echo "d8904b4d338adf83688caac869f64c0b" > /etc/machine-id && \
     echo "d8904b4d338adf83688caac869f64c0b" > /var/lib/dbus/machine-id && \
     echo "AkenoChanXD" > /etc/hostname
 
-USER node
-ENV HOME=/home/node \
-    PATH="/home/node/.npm-global/bin:${PATH}"
-
-RUN npm config set prefix /home/node/.npm-global && \
-    npm install -g shellular
+RUN npm install -g shellular
 
 WORKDIR /home/node/app
 
-COPY --chown=node:node package*.json ./
+COPY package*.json ./
 RUN npm install --omit=dev
 
-COPY --chown=node:node . .
+COPY . .
+RUN chown -R node:node /home/node/app
+
+COPY entrypoint.sh /entrypoint.sh
+RUN chmod +x /entrypoint.sh
 
 EXPOSE 10000
 ENV PORT=10000 \
-    HOSTNAME=AkenoChanXD
+    HOSTNAME=AkenoChanXD \
+    HOME=/home/node \
+    PATH="/usr/local/bin:/usr/bin:/bin"
 
+ENTRYPOINT ["/entrypoint.sh"]
 CMD ["node", "app.js"]
