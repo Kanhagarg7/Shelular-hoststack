@@ -25,7 +25,8 @@ RUN echo "node ALL=(ALL) NOPASSWD:ALL" > /etc/sudoers.d/node && \
 
 RUN echo "d8904b4d338adf83688caac869f64c0b" > /etc/machine-id && \
     mkdir -p /var/lib/dbus && \
-    echo "d8904b4d338adf83688caac869f64c0b" > /var/lib/dbus/machine-id
+    echo "d8904b4d338adf83688caac869f64c0b" > /var/lib/dbus/machine-id && \
+    echo "AkenoChanXD" > /etc/hostname
 
 USER node
 ENV HOME=/home/node \
@@ -41,7 +42,8 @@ RUN npm install --omit=dev
 
 COPY --chown=node:node . .
 
-EXPOSE 7860
-ENV PORT=7860
+EXPOSE 10000
+ENV PORT=10000 \
+    HOSTNAME=AkenoChanXD
 
 CMD ["node", "app.js"]
