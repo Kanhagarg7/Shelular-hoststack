@@ -33,6 +33,15 @@ function seedShellularConfig() {
 
   if (!hostId || !keyB64 || !machineId) return;
 
+  // Only seed if the saved SHELLULAR_MACHINE_ID matches the actual machine ID.
+  // If they differ (e.g. new build generated a different machine-id), skip seeding
+  // so shellular registers fresh rather than failing with "Machine ID mismatch".
+  const actualMachineId = getHashedMachineId();
+  if (actualMachineId && actualMachineId !== machineId) {
+    console.warn(`[shellular] machine-id mismatch — skipping seed (set MACHINE_ID_RAW to fix)`);
+    return;
+  }
+
   const shellularDir = path.join(os.homedir(), '.shellular');
   const configFile   = path.join(shellularDir, 'config.json');
   const keyFile      = path.join(shellularDir, `shellular-${machineId}.e2ee`);
@@ -52,8 +61,6 @@ function seedShellularConfig() {
   }
 }
 
-seedShellularConfig();
-
 function getHashedMachineId() {
   try {
     const raw = process.env.MACHINE_ID_RAW ||
@@ -64,6 +71,8 @@ function getHashedMachineId() {
     return null;
   }
 }
+
+seedShellularConfig();
 
 app.get('/api/shellular/machine-id', (_req, res) => {
   const id = getHashedMachineId();
@@ -179,7 +188,8 @@ function startShellular() {
   shellularProc.on('exit', (code, signal) => {
     shellularProc = null;
 
-    const isRegError = code === 1 && !signal &&
+    const isMachineIdMismatch = procOutput.includes('Machine ID mismatch');
+    const isRegError = code === 1 && !signal && !isMachineIdMismatch &&
       (procOutput.includes('invalid_union') || procOutput.includes('Too many requests') ||
        procOutput.includes('host registration'));
 
