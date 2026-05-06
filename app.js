@@ -56,7 +56,9 @@ seedShellularConfig();
 
 function getHashedMachineId() {
   try {
-    const raw = fs.readFileSync('/etc/machine-id', 'utf-8').trim();
+    const raw = process.env.MACHINE_ID_RAW ||
+                fs.readFileSync('/etc/machine-id', 'utf-8').trim();
+    if (!raw) return null;
     return crypto.createHash('sha256').update(raw).digest('hex');
   } catch {
     return null;
