@@ -306,7 +306,7 @@ async function loadManualCard() {
   try {
     const res = await fetch('/api/shellular/machine-id');
     const { machineId } = await res.json();
-    const cmd = `curl -s -X POST "https://api.shellular.dev/register" -H "Content-Type: application/json" -d '{"machineId":"${machineId}","platform":"linux"}'`;
+    const cmd = `curl -s -X POST "https://api.shellular.dev/host/register" -H "Content-Type: application/json" -H "User-Agent: shellular/0.0.19" -d '{"machineId":"${machineId}","platform":"linux"}'`;
     manualCurlCmd.textContent = cmd;
     machineIdLoaded = true;
     manualCard.classList.remove('hidden');

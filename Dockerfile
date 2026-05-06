@@ -29,7 +29,7 @@ RUN echo "d8904b4d338adf83688caac869f64c0b" > /etc/machine-id && \
     echo "d8904b4d338adf83688caac869f64c0b" > /var/lib/dbus/machine-id && \
     echo "AkenoChanXD" > /etc/hostname
 
-RUN npm install -g shellular
+RUN npm install -g shellular@0.0.19
 
 WORKDIR /home/node/app
 
