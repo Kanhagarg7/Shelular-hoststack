@@ -24,10 +24,7 @@ RUN pip3 install --no-cache-dir --break-system-packages yt-dlp
 RUN echo "node ALL=(ALL) NOPASSWD:ALL" > /etc/sudoers.d/node && \
     chmod 0440 /etc/sudoers.d/node
 
-RUN echo "d8904b4d338adf83688caac869f64c0b" > /etc/machine-id && \
-    mkdir -p /var/lib/dbus && \
-    echo "d8904b4d338adf83688caac869f64c0b" > /var/lib/dbus/machine-id && \
-    echo "AkenoChanXD" > /etc/hostname
+RUN echo "AkenoChanXD" > /etc/hostname
 
 RUN npm install -g shellular@0.0.19
 
