@@ -70,6 +70,16 @@ app.get('/api/shellular/machine-id', (_req, res) => {
   id ? res.json({ machineId: id }) : res.status(500).json({ error: 'Cannot read machine-id' });
 });
 
+app.get('/api/shellular/raw-machine-id', (_req, res) => {
+  try {
+    const raw = process.env.MACHINE_ID_RAW ||
+                fs.readFileSync('/etc/machine-id', 'utf-8').trim();
+    raw ? res.json({ raw }) : res.status(500).json({ error: 'Not available' });
+  } catch {
+    res.status(500).json({ error: 'Not available' });
+  }
+});
+
 app.post('/api/shellular/seed-host', requireAuth, (req, res) => {
   const { hostId } = req.body || {};
   if (!hostId || typeof hostId !== 'string' || !hostId.trim()) {
@@ -249,7 +259,8 @@ app.get('/api/setup-status', requireAuth, (_req, res) => {
   const seeded = !!(
     process.env.SHELLULAR_HOST_ID &&
     process.env.SHELLULAR_KEY &&
-    process.env.SHELLULAR_MACHINE_ID
+    process.env.SHELLULAR_MACHINE_ID &&
+    process.env.MACHINE_ID_RAW
   );
   res.json({ seeded });
 });

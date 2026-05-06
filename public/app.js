@@ -373,9 +373,13 @@ async function checkSetup() {
     if (!data.hostId) return;
 
     
-    $('val-host-id').textContent    = data.hostId;
-    $('val-machine-id').textContent = data.machineId;
-    $('val-key').textContent        = data.keyB64;
+    const r3 = await fetch('/api/shellular/raw-machine-id');
+    const { raw } = r3.ok ? await r3.json() : {};
+
+    $('val-raw-machine-id').textContent = raw || '';
+    $('val-host-id').textContent        = data.hostId;
+    $('val-machine-id').textContent     = data.machineId;
+    $('val-key').textContent            = data.keyB64;
     setupCard.classList.remove('hidden');
     setupDone = true;
   } catch {  }
