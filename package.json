@@ -1,0 +1,17 @@
+{
+  "name": "shellular-web",
+  "version": "1.0.0",
+  "description": "Web UI for Shellular — scan QR code to connect your VPS remotely",
+  "type": "module",
+  "main": "app.js",
+  "scripts": {
+    "start": "node app.js",
+    "dev": "node --watch app.js"
+  },
+  "dependencies": {
+    "express": "^4.19.2"
+  },
+  "engines": {
+    "node": ">=20"
+  }
+}

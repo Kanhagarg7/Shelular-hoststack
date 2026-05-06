@@ -1,0 +1,10 @@
+node_modules/
+
+# Keep-alive secrets — never commit real tokens
+.keep-alive.env
+
+# Runtime logs
+keep-alive.log
+
+# Devin for Terminal tool config (not part of the project)
+.devin/

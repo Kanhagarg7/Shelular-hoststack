@@ -1,0 +1,201 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Shellular</title>
+  <link rel="stylesheet" href="style.css" />
+</head>
+<body>
+
+  <!-- ── Login page ─────────────────────────────────────────── -->
+  <div id="login-page" class="page">
+    <div class="login-card">
+      <div class="brand">
+        <svg class="brand-icon" viewBox="0 0 40 40" fill="none" xmlns="http://www.w3.org/2000/svg">
+          <rect width="40" height="40" rx="10" fill="#00c4cc"/>
+          <path d="M8 14l8 6-8 6" stroke="#fff" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/>
+          <line x1="20" y1="26" x2="32" y2="26" stroke="#fff" stroke-width="2.5" stroke-linecap="round"/>
+        </svg>
+        <h1>Shellular</h1>
+      </div>
+      <p class="tagline">Enter your access key to get the QR code</p>
+
+      <form id="login-form" autocomplete="off">
+        <div class="field">
+          <label for="key-input">Access Key</label>
+          <div class="input-wrap">
+            <input
+              id="key-input"
+              type="password"
+              placeholder="••••••••••••"
+              autocomplete="current-password"
+              spellcheck="false"
+            />
+            <button type="button" id="toggle-vis" class="eye-btn" aria-label="Toggle visibility">
+              <svg id="eye-open" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/>
+                <circle cx="12" cy="12" r="3"/>
+              </svg>
+              <svg id="eye-closed" class="hidden" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94"/>
+                <path d="M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19"/>
+                <line x1="1" y1="1" x2="23" y2="23"/>
+              </svg>
+            </button>
+          </div>
+        </div>
+
+        <button type="submit" id="login-btn">
+          <span id="login-label">Login</span>
+          <span id="login-spinner" class="spinner hidden"></span>
+        </button>
+
+        <p id="login-error" class="error-msg hidden"></p>
+      </form>
+    </div>
+  </div>
+
+  <!-- ── Dashboard page ─────────────────────────────────────── -->
+  <div id="dashboard-page" class="page hidden">
+    <header class="topbar">
+      <div class="topbar-brand">
+        <svg class="brand-icon small" viewBox="0 0 40 40" fill="none" xmlns="http://www.w3.org/2000/svg">
+          <rect width="40" height="40" rx="10" fill="#00c4cc"/>
+          <path d="M8 14l8 6-8 6" stroke="#fff" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/>
+          <line x1="20" y1="26" x2="32" y2="26" stroke="#fff" stroke-width="2.5" stroke-linecap="round"/>
+        </svg>
+        <span>Shellular</span>
+      </div>
+      <div class="topbar-actions">
+        <span id="status-badge" class="badge badge-stopped">Stopped</span>
+        <button id="restart-btn" class="btn btn-secondary" title="Restart shellular">&#8635; Restart</button>
+        <button id="logout-btn" class="btn btn-ghost">Logout</button>
+      </div>
+    </header>
+
+    <main class="dashboard">
+
+      <!-- QR card -->
+      <section class="card qr-card">
+        <div class="card-header">
+          <h2>QR Code</h2>
+          <p>Scan with the <strong>Shellular app</strong> to connect your device</p>
+        </div>
+
+        <div id="qr-area" class="qr-area">
+          <!-- Loading state -->
+          <div id="qr-loading" class="qr-state">
+            <div class="loader"></div>
+            <p>Starting Shellular&hellip;</p>
+          </div>
+
+          <!-- QR code rendered on canvas via qrcode.js -->
+          <div id="qr-ready" class="qr-state hidden">
+            <div class="qr-frame">
+              <div id="qr-canvas"></div>
+            </div>
+            <p class="qr-hint">Point your Shellular app camera at the code above</p>
+          </div>
+
+          <!-- Error / stopped state -->
+          <div id="qr-error" class="qr-state hidden">
+            <p class="error-icon">&#9888;</p>
+            <p id="qr-error-msg">Shellular stopped unexpectedly.</p>
+            <button class="btn btn-primary" onclick="restartShellular()">Try again</button>
+          </div>
+        </div>
+      </section>
+
+      <!-- First-time setup card (hidden once secrets are saved) -->
+      <section id="setup-card" class="card setup-card hidden">
+        <div class="card-header">
+          <h2>&#9889; One-time Setup</h2>
+          <p>Save these as HF Secrets so restarts never need to re-register</p>
+        </div>
+        <div class="setup-body">
+          <p class="setup-intro">
+            Shellular just registered successfully. To make this permanent
+            (and avoid rate-limit errors after container restarts), add the
+            three secrets below to your Space:
+            <a href="https://huggingface.co/spaces/settings" target="_blank" class="setup-link">
+              Space Settings → Variables and secrets
+            </a>
+          </p>
+
+          <div class="secret-row">
+            <span class="secret-name">SHELLULAR_HOST_ID</span>
+            <code id="val-host-id" class="secret-val"></code>
+            <button class="btn-copy" data-target="val-host-id">Copy</button>
+          </div>
+          <div class="secret-row">
+            <span class="secret-name">SHELLULAR_MACHINE_ID</span>
+            <code id="val-machine-id" class="secret-val"></code>
+            <button class="btn-copy" data-target="val-machine-id">Copy</button>
+          </div>
+          <div class="secret-row">
+            <span class="secret-name">SHELLULAR_KEY</span>
+            <code id="val-key" class="secret-val"></code>
+            <button class="btn-copy" data-target="val-key">Copy</button>
+          </div>
+
+          <p class="setup-note">
+            After adding all three, restart this Space. This panel will disappear once the secrets are detected.
+          </p>
+        </div>
+      </section>
+
+      <!-- Manual registration fallback (shown when rate-limited) -->
+      <section id="manual-reg-card" class="card manual-card hidden">
+        <div class="card-header">
+          <h2>&#9888; Rate Limited — Manual Registration</h2>
+          <p>The shellular relay rejected automatic registration. Run one command from your terminal.</p>
+        </div>
+        <div class="manual-body">
+          <p class="manual-intro">
+            The Shellular registration API is temporarily rate-limiting this server's IP.
+            You can bypass it by registering from <strong>your own machine</strong> — it only takes 10 seconds.
+          </p>
+
+          <div class="manual-step">
+            <span class="step-num">1</span>
+            <div>
+              <p>Run this in your terminal (Mac / Linux / Windows WSL):</p>
+              <div class="code-block">
+                <code id="manual-curl-cmd">Loading…</code>
+                <button class="btn-copy" data-target="manual-curl-cmd">Copy</button>
+              </div>
+            </div>
+          </div>
+
+          <div class="manual-step">
+            <span class="step-num">2</span>
+            <div>
+              <p>You'll get back something like <code class="inline-code">{"success":true,"data":{"hostId":"<strong>XXXX</strong>"}}</code></p>
+              <p>Paste the <strong>hostId</strong> value below and click <strong>Connect</strong>:</p>
+              <div class="manual-input-row">
+                <input id="manual-host-id" type="text" placeholder='e.g. M58FBHn3YzbN' spellcheck="false" />
+                <button id="manual-submit-btn" class="btn btn-primary manual-btn">Connect</button>
+              </div>
+              <p id="manual-error" class="error-msg hidden"></p>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- Log card -->
+      <section class="card log-card">
+        <div class="card-header">
+          <h2>Output</h2>
+          <button id="clear-log-btn" class="btn btn-ghost small">Clear</button>
+        </div>
+        <pre id="log-pre" class="log-pre"></pre>
+      </section>
+
+    </main>
+  </div>
+
+  <script src="qrcode.min.js"></script>
+  <script src="app.js"></script>
+</body>
+</html>
