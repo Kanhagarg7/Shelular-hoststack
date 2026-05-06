@@ -305,7 +305,13 @@ async function loadManualCard() {
   if (machineIdLoaded) { manualCard.classList.remove('hidden'); return; }
   try {
     const res = await fetch('/api/shellular/machine-id');
-    const { machineId } = await res.json();
+    const data = await res.json();
+    const machineId = data.machineId;
+    if (!machineId) {
+      manualCurlCmd.textContent = 'Set the MACHINE_ID_RAW environment variable first, then restart the service.';
+      manualCard.classList.remove('hidden');
+      return;
+    }
     const cmd = `curl -s -X POST "https://api.shellular.dev/host/register" -H "Content-Type: application/json" -H "User-Agent: shellular/0.0.19" -d '{"machineId":"${machineId}","platform":"linux"}'`;
     manualCurlCmd.textContent = cmd;
     machineIdLoaded = true;
