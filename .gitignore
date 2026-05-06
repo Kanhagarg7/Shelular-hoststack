@@ -8,3 +8,4 @@ keep-alive.log
 
 # Devin for Terminal tool config (not part of the project)
 .devin/
+*.tgz
