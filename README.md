@@ -96,21 +96,6 @@ Paste the returned `hostId` into the input field and click **Connect**.
 
 ---
 
-## Deployment
-
-Works on any platform that supports persistent Node.js or Docker:
-
-| Platform | Notes |
-|----------|-------|
-| **Docker** | `docker run -e SECRET_KEY=... -p 7860:7860` |
-| **Your VPS** | `SECRET_KEY=... node app.js` or use `pm2` |
-| **Fly.io** | `flyctl deploy` |
-| **Railway** | Connect repo, set env vars |
-| **Render** | Connect repo, set env vars |
-| **Koyeb** | Connect repo, set env vars |
-
----
-
 ## Project Structure
 
 ```
