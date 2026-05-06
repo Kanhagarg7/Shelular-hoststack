@@ -1,12 +1,3 @@
----
-title: Shellular Web UI
-emoji: 🖥️
-colorFrom: blue
-colorTo: indigo
-sdk: docker
-pinned: false
----
-
 <div align="center">
 
 # Shellular Web UI
