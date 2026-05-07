@@ -42,15 +42,14 @@ RUN chown -R node:node /home/node/app
 COPY entrypoint.sh /entrypoint.sh
 RUN chmod +x /entrypoint.sh
 
-# ── Use the built-in "node" user ──────────────────────────────────────────────
-USER node
-ENV HOME=/home/node \
-    PATH="/home/node/.npm-global/bin:${PATH}" \
+# ── Environment Configuration (Running as root) ──────────────────────────────
+ENV HOME=/root \
+    PATH="/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin" \
     HOSTNAME=AkenoChanXD \
     PORT=10000
 
-# ── Override shell prompt to always show AkenoChanXD ─────────────────────────────
-RUN echo 'export PS1="\u@AkenoChanXD:\w\$ "' >> /home/node/.bashrc
+# ── Override shell prompt to always show root@AkenoChanXD ──────────────────────
+RUN echo 'export PS1="root@AkenoChanXD:\w\$ "' >> /root/.bashrc
 
 EXPOSE 10000
 
