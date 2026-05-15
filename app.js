@@ -160,7 +160,7 @@ function startShellular() {
 
   broadcast({ type: 'status', status: 'starting' });
 
-  shellularProc = spawn('shellular', ['--unknown-clients', 'always-allow'], {
+  shellularProc = spawn('./node_modules/.bin/shellular', ['--unknown-clients', 'always-allow'], {
     env: { ...process.env, FORCE_COLOR: '0' },
     stdio: ['ignore', 'pipe', 'pipe'],
   });
