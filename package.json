@@ -6,7 +6,8 @@
   "main": "app.js",
   "scripts": {
     "start": "node app.js",
-    "dev": "node --watch app.js"
+    "dev": "node --watch app.js",
+    "build": "echo Build completed"
   },
   "dependencies": {
     "express": "^4.19.2"
