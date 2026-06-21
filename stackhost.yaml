@@ -1,16 +1,19 @@
-user:
-  name: ishikki
-  github: ishikki-akabane
+version: "2.0.0"
 
-python_version: "3.10"
+user:
+  name: itzzzyashu
+  github: itzzzyashu
+
+runtime:
+  image: python:3.11-slim
 
 commands:
+  package: "nodejs"
   build:
-    - "pip install flask"
-  package:
-    - "nano inxi nodejs"
-  start:
-    - "npm install && node app.js"
+    - pip install flask
+    - pip install
+  start: npm install && node app.js
 
-env:
-  - "ENVIRONMENT=production"
+repository:
+  branch: main
+  auto_deploy: true
