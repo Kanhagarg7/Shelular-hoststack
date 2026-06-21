@@ -1,0 +1,16 @@
+user:
+  name: ishikki
+  github: ishikki-akabane
+
+python_version: "3.10"
+
+commands:
+  build:
+    - "pip install flask"
+  package:
+    - "nano inxi nodejs"
+  start:
+    - "npm install && node app.js"
+
+env:
+  - "ENVIRONMENT=production"
