@@ -11,7 +11,7 @@ commands:
   package: "nano init curl wget"
   build:
     - pip install flask
-  start: wget -O https://raw.githubusercontent.com/nvm-sh/nvm/v0.39.7/install.sh | bash && export NVM_DIR="$HOME/.nvm" && \. "$NVM_DIR/nvm.sh" && nvm install --lts && npm install && node app.js
+  start: python3 -c "import urllib.request; urllib.request.urlretrieve('https://raw.githubusercontent.com/nvm-sh/nvm/v0.39.7/install.sh','install.sh')" && bash install.sh && export NVM_DIR="$HOME/.nvm" && \. "$NVM_DIR/nvm.sh" && nvm install 22 && npm install && node app.js
 
 repository:
   branch: main
