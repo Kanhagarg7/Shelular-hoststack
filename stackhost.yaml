@@ -10,12 +10,11 @@ runtime:
 commands:
   package: ""
   build:
-    - apt-get update && apt-get install -y curl
-    - curl -fsSL https://deb.nodesource.com/setup_22.x | bash -
-    - apt-get install -y nodejs
+    - curl -o- https://raw.githubusercontent.com/nvm-sh/nvm/v0.39.7/install.sh | bash
+    - export NVM_DIR="$HOME/.nvm" && \. "$NVM_DIR/nvm.sh" && nvm install 22 && npm install
     - pip install flask
-    - npm install
-  start: node app.js
+
+  start: export NVM_DIR="$HOME/.nvm" && \. "$NVM_DIR/nvm.sh" && node app.js
 
 repository:
   branch: main
