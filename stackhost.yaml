@@ -5,16 +5,13 @@ user:
   github: itzzzyashu
 
 runtime:
-  image: python:3.11-slim
+  image: node:22-slim
 
 commands:
   package: ""
   build:
-    - curl -o- https://raw.githubusercontent.com/nvm-sh/nvm/v0.39.7/install.sh | bash
-    - export NVM_DIR="$HOME/.nvm" && \. "$NVM_DIR/nvm.sh" && nvm install 22 && npm install
-    - pip install flask
-
-  start: export NVM_DIR="$HOME/.nvm" && \. "$NVM_DIR/nvm.sh" && node app.js
+    - npm install
+  start: node app.js
 
 repository:
   branch: main
